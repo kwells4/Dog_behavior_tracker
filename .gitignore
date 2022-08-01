@@ -1,0 +1,5 @@
+.*
+!.gitignore
+files/*
+scripts/shiny/responses/*
+scripts/shiny/files/*
