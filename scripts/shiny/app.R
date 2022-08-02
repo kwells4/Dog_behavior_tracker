@@ -245,37 +245,38 @@ shinyApp(
         days_since_reactive <- c("NA", diff(total_reactivity$Date))
         total_reactivity$Days_since_last_event <- days_since_reactive
         
-        reactivity_ratings <- c("1 - Growl, no barking",
-                                "2 - Small barks, easy to distract",
-                                "3 - Barked, no lunging",
-                                "4 - Lunged and barked aggressively",
-                                "5 - Made contact with human")
-        
-        total_tracker <- lapply(reactivity_ratings, function(x){
-          subset_reactivity <- total_reactivity %>%
-            filter(Score == x)
-          
-          if(nrow(subset_reactivity) > 0){
-            last_reaction <- subset_reactivity[nrow(subset_reactivity),]$Date
-            
-            time_since_reaction <- as.numeric(as.Date(data$date) - 
-                                                as.Date(last_reaction))
-            
-
-          } else {
-            time_since_reaction <- "NA"
-          }
-
-          return_data <- data.frame("Reaction" = x,
-                                    "Days_since_reaction" = time_since_reaction)
-          
-          return(data.frame("Reaction" = x,
-                            "Days_since_reaction" = time_since_reaction))
-          
-        })
-
-        total_tracker <- do.call(rbind, total_tracker)
       }
+      
+      reactivity_ratings <- c("1 - Growl, no barking",
+                              "2 - Small barks, easy to distract",
+                              "3 - Barked, no lunging",
+                              "4 - Lunged and barked aggressively",
+                              "5 - Made contact with human")
+      
+      total_tracker <- lapply(reactivity_ratings, function(x){
+        subset_reactivity <- total_reactivity %>%
+          filter(Score == x)
+        
+        if(nrow(subset_reactivity) > 0){
+          last_reaction <- subset_reactivity[nrow(subset_reactivity),]$Date
+          
+          time_since_reaction <- as.numeric(as.Date(data$date) - 
+                                              as.Date(last_reaction))
+          
+          
+        } else {
+          time_since_reaction <- "NA"
+        }
+        
+        return_data <- data.frame("Reaction" = x,
+                                  "Days_since_reaction" = time_since_reaction)
+        
+        return(data.frame("Reaction" = x,
+                          "Days_since_reaction" = time_since_reaction))
+        
+      })
+      
+      total_tracker <- do.call(rbind, total_tracker)
       
       # Save reaction history
       openxlsx::addWorksheet(wb = excel_wb,
