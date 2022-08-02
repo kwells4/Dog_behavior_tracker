@@ -3,3 +3,4 @@
 files/*
 scripts/shiny/responses/*
 scripts/shiny/files/*
+.Rproj.user

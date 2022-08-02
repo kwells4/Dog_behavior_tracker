@@ -198,6 +198,7 @@ shinyApp(
           return_df <- data.frame("Name" = name, "Date" = date,
                                   "Type_of_person" = reactivity_person,
                                   "Score" = reactivity_score,
+                                  "Distance" = reactivity_distance,
                                   "Notes" = reactivity_notes,
                                   "Days_since_last_event" = "NA")
         }
@@ -286,13 +287,13 @@ shinyApp(
       openxlsx::addStyle(wb = excel_wb,
                          sheet = "Negative_reaction_history",
                          style = merge_style,
-                         cols = 5,
+                         cols = 6,
                          rows = 2:nrow(total_reactivity))
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Negative_reaction_history",
-                             cols = c(1, 2, 3, 4, 5),
-                             widths = c(12, 12, 16, 30, 60))
+                             cols = c(1, 2, 3, 4, 5, 6),
+                             widths = c(12, 12, 16, 30, 16, 60))
       
       # Save tracker
       openxlsx::addWorksheet(wb = excel_wb,
