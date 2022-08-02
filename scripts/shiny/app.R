@@ -5,9 +5,15 @@ library(googledrive)
 fieldsMandatory <- c("name", "date")
 
 # Path to file on google drive
-
 drive_file <- "Riley/riley_reaction_history"
 
+reactivity_ratings <- c("1 - Growl, no barking",
+                        "2 - Small barks, easy to distract",
+                        "3 - Barked, no lunging",
+                        "4 - Lunged and barked aggressively",
+                        "5 - Made contact with human")
+
+reactivity_input <- c("Pick a score", reactivity_ratings)
 
 # Create workbook
 riley_reactivity_wb <- openxlsx::createWorkbook()
@@ -15,13 +21,6 @@ riley_reactivity_wb <- openxlsx::createWorkbook()
 merge_style <- openxlsx::createStyle(wrapText = TRUE)
 
 # Fields I want
-# Date
-# Person
-# Did Riley react on the walk? - 5 possible ones to fill out
-  # Description of person
-  # Score - drop down list - 1 -5
-  # Distance
-  # Notes
 # Did Riley have positive interactions on her walk? - 5 possible ones to fill out
   # Description of person
   # Distance
@@ -97,12 +96,7 @@ shinyApp(
       h4("-------- Reactivity 1 --------"),
       textInput("reactivity_1", "Who did she react to?"),
       selectInput("reactivity_score_1", "What was her score?",
-                  c("Pick a score",
-                    "1 - Growl, no barking",
-                    "2 - Small barks, easy to distract",
-                    "3 - Barked, no lunging",
-                    "4 - Lunged and barked aggressively",
-                    "5 - Made contact with human")),
+                  reactivity_input),
       textInput("reactivity_distance_1", "How far away was the stranger?"),
       textInput("reactivity_notes_1", "Describe the event"),
 
@@ -110,12 +104,7 @@ shinyApp(
       h4("-------- Reactivity 2 --------"),
       textInput("reactivity_2", "Who did she react to?"),
       selectInput("reactivity_score_2", "What was her score?",
-                  c("Pick a score",
-                    "1 - Growl, no barking",
-                    "2 - Small barks, easy to distract",
-                    "3 - Barked, no lunging",
-                    "4 - Lunged and barked aggressively",
-                    "5 - Made contact with human")),
+                  reactivity_input),
       textInput("reactivity_distance_2", "How far away was the stranger?"),
       textInput("reactivity_notes_2", "Describe the event"),
 
@@ -123,12 +112,7 @@ shinyApp(
       h4("-------- Reactivity 3 --------"),
       textInput("reactivity_3", "Who did she react to?"),
       selectInput("reactivity_score_3", "What was her score?",
-                  c("Pick a score",
-                    "1 - Growl, no barking",
-                    "2 - Small barks, easy to distract",
-                    "3 - Barked, no lunging",
-                    "4 - Lunged and barked aggressively",
-                    "5 - Made contact with human")),
+                  reactivity_input),
       textInput("reactivity_distance_3", "How far away was the stranger?"),
       textInput("reactivity_notes_3", "Describe the event"),
 
@@ -136,12 +120,7 @@ shinyApp(
       h4("-------- Reactivity 4 --------"),
       textInput("reactivity_4", "Who did she react to?"),
       selectInput("reactivity_score_4", "What was her score?",
-                  c("Pick a score",
-                    "1 - Growl, no barking",
-                    "2 - Small barks, easy to distract",
-                    "3 - Barked, no lunging",
-                    "4 - Lunged and barked aggressively",
-                    "5 - Made contact with human")),
+                  reactivity_input),
       textInput("reactivity_distance_4", "How far away was the stranger?"),
       textInput("reactivity_notes_4", "Describe the event"),
 
@@ -149,12 +128,7 @@ shinyApp(
       h4("-------- Reactivity 5 --------"),
       textInput("reactivity_5", "Who did she react to?"),
       selectInput("reactivity_score_5", "What was her score?",
-                  c("Pick a score",
-                    "1 - Growl, no barking",
-                    "2 - Small barks, easy to distract",
-                    "3 - Barked, no lunging",
-                    "4 - Lunged and barked aggressively",
-                    "5 - Made contact with human")),
+                  reactivity_input),
       textInput("reactivity_distance_5", "How far away was the stranger?"),
       textInput("reactivity_notes_5", "Describe the event"),
 
@@ -246,12 +220,6 @@ shinyApp(
         total_reactivity$Days_since_last_event <- days_since_reactive
         
       }
-      
-      reactivity_ratings <- c("1 - Growl, no barking",
-                              "2 - Small barks, easy to distract",
-                              "3 - Barked, no lunging",
-                              "4 - Lunged and barked aggressively",
-                              "5 - Made contact with human")
       
       total_tracker <- lapply(reactivity_ratings, function(x){
         subset_reactivity <- total_reactivity %>%
