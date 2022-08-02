@@ -132,6 +132,39 @@ shinyApp(
       textInput("reactivity_distance_5", "How far away was the stranger?"),
       textInput("reactivity_notes_5", "Describe the event"),
 
+      # Positive stranger interactions ---------------------------------
+      h3("Did Riley have positive interacitons with Strangers?"),
+      
+      # Positive Reactivity 1
+      h4("-------- Positive Reactivity 1 --------"),
+      textInput("pos_reactivity_1", "Who did she react to?"),
+      textInput("pos_reactivity_distance_1", "How far away was the stranger?"),
+      textInput("pos_reactivity_notes_1", "Describe the event"),
+      
+      # Positive Reactivity 2
+      h4("-------- Positive Reactivity 2 --------"),
+      textInput("pos_reactivity_2", "Who did she react to?"),
+      textInput("pos_reactivity_distance_2", "How far away was the stranger?"),
+      textInput("pos_reactivity_notes_2", "Describe the event"),
+      
+      # Positive Reactivity 3
+      h4("-------- Positive Reactivity 3 --------"),
+      textInput("pos_reactivity_3", "Who did she react to?"),
+      textInput("pos_reactivity_distance_3", "How far away was the stranger?"),
+      textInput("pos_reactivity_notes_3", "Describe the event"),
+      
+      # Positive Reactivity 4
+      h4("-------- Positive Reactivity 4 --------"),
+      textInput("pos_reactivity_4", "Who did she react to?"),
+      textInput("pos_reactivity_distance_4", "How far away was the stranger?"),
+      textInput("pos_reactivity_notes_4", "Describe the event"),
+      
+      # Positive Reactivity 5
+      h4("-------- Positive Reactivity 5 --------"),
+      textInput("pos_reactivity_5", "Who did she react to?"),
+      textInput("pos_reactivity_distance_5", "How far away was the stranger?"),
+      textInput("pos_reactivity_notes_5", "Describe the event"),
+      
       actionButton("submit", "Submit", class = "btn-primary")
     ),
     shinyjs::hidden(
@@ -161,7 +194,7 @@ shinyApp(
       name <- return_list$name <- input$name
       date <- return_list$date <- as.Date(input$date)
       
-      # Add reactivity data
+      ## Add reactivity data -----------------------------------------
       reactivity <- lapply(1:5, function(x){
         reactivity_name <- paste0("reactivity_", x)
         reactivity_person <- input[[reactivity_name]]
@@ -180,7 +213,23 @@ shinyApp(
       
       reactivity <- do.call(rbind, reactivity)
       
-      return_list$reactivity <- reactivity
+      ## Add positive reactivity data --------------------------------
+      pos_reactivity <- lapply(1:5, function(x){
+        pos_reactivity_name <- paste0("pos_reactivity_", x)
+        pos_reactivity_person <- input[[pos_reactivity_name]]
+        if(!is.null(pos_reactivity_person) & pos_reactivity_person != ""){
+          pos_reactivity_distance <- input[[paste0("pos_reactivity_distance_", x)]]
+          pos_reactivity_notes <- input[[paste0("pos_reactivity_notes_", x)]]
+          return_df <- data.frame("Name" = name, "Date" = date,
+                                  "Type_of_person" = pos_reactivity_person,
+                                  "Distance" = pos_reactivity_distance,
+                                  "Notes" = pos_reactivity_notes)
+        }
+      })
+      
+      pos_reactivity <- do.call(rbind, pos_reactivity)
+      
+      return_list$pos_reactivity <- pos_reactivity
       
       return_list
 
@@ -195,7 +244,7 @@ shinyApp(
                                                              "riley_data.xlsx"),
                                             overwrite = TRUE)
       
-      # Reactivity addition
+      ## Reactivity addition --------------------------------------
       existing_reactivity <- 
         openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
                                                     "riley_data.xlsx"),
@@ -246,6 +295,27 @@ shinyApp(
       
       total_tracker <- do.call(rbind, total_tracker)
       
+      ## Positive reactivity ----------------------------------------
+      existing_pos_reactivity <- 
+        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
+                                                    "riley_data.xlsx"),
+                               sheet = "Positive_reaction_history")
+      
+      
+      
+      existing_pos_reactivity$Date <- 
+        openxlsx::convertToDate(existing_pos_reactivity$Date)
+      
+  
+      if(is.null(data$pos_reactivity)){
+        total_pos_reactivity <- existing_pos_reactivity
+      } else {
+        total_pos_reactivity <- rbind(existing_pos_reactivity,
+                                      data$pos_reactivity)
+      }
+
+      ## Add to wb --------------------------------------------------
+      
       # Save reaction history
       openxlsx::addWorksheet(wb = excel_wb,
                              sheet = "Negative_reaction_history")
@@ -276,8 +346,28 @@ shinyApp(
                              cols = c(1, 2),
                              widths = c(30, 12))
       
+      # Save positive reaction history
+      openxlsx::addWorksheet(wb = excel_wb,
+                             sheet = "Positive_reaction_history")
+      openxlsx::writeData(wb = excel_wb,
+                          sheet = "Positive_reaction_history", 
+                          x = total_pos_reactivity)
+      
+      openxlsx::addStyle(wb = excel_wb,
+                         sheet = "Positive_reaction_history",
+                         style = merge_style,
+                         cols = 5,
+                         rows = 2:nrow(total_pos_reactivity))
+      
+      openxlsx::setColWidths(wb = excel_wb,
+                             sheet = "Positive_reaction_history",
+                             cols = c(1, 2, 3, 4, 5),
+                             widths = c(12, 12, 16, 16, 60))
+      
+      # Save workbook
       openxlsx::saveWorkbook(wb = excel_wb, file = save_name,
                              overwrite = TRUE)
+      
       
       # Move file to drive
       drive_upload(save_name, drive_file, type = "spreadsheet",
