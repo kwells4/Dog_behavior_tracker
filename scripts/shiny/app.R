@@ -15,18 +15,34 @@ reactivity_ratings <- c("1 - Growl, no barking",
 
 reactivity_input <- c("Pick a score", reactivity_ratings)
 
+negative_behaviors <- c("Barking - work",
+                        "Barking - food",
+                        "Barking - play",
+                        "Barking - other",
+                        "Jumping - work",
+                        "Jumping - other",
+                        "Pawing",
+                        "Mouthing", "Antsy - work",
+                        "Antsy - other",
+                        "Chewing furnature",
+                        "Crawling into front of car",
+                        "Pulling on walk",
+                        "Chasing Squirrles",
+                        "Chasing Rabbits",
+                        "other")
+
+negative_behaiors_input <- c("Pick a behavior", negative_behaviors)
+
 # Create workbook
 riley_reactivity_wb <- openxlsx::createWorkbook()
 
 merge_style <- openxlsx::createStyle(wrapText = TRUE)
 
 # Fields I want
-# Did Riley have positive interactions on her walk? - 5 possible ones to fill out
-  # Description of person
-  # Distance
-  # Notes
 # Did Riley have negative behaviors with you? - 5 possible ones to fill out
   # Type of behavior (drop down list, include other)
+  # Include a field for the other behavior. If other is selected look in this
+    # field for the behavior
   # Notes
 # Did Riley have positive behaviors with you? - 5 opssible ones to fill out
   # Type of behavior (drop down list, include other)
@@ -46,10 +62,6 @@ merge_style <- openxlsx::createStyle(wrapText = TRUE)
   # Notes
 
 
-
-# Figure out how to check if the field is blank...?
-
-# Mandatory?
 
 save_dir <- file.path("files")
 
@@ -91,79 +103,44 @@ shinyApp(
       # Stranger reactivity -----------------------------------
       h3("Did Riley have negative interacitons with Strangers?"),
       
-      # Eventually figure out how to do this in a loop
-      # Reactivity 1
-      h4("-------- Reactivity 1 --------"),
-      textInput("reactivity_1", "Who did she react to?"),
-      selectInput("reactivity_score_1", "What was her score?",
-                  reactivity_input),
-      textInput("reactivity_distance_1", "How far away was the stranger?"),
-      textInput("reactivity_notes_1", "Describe the event"),
-
-      # Reactivity 2
-      h4("-------- Reactivity 2 --------"),
-      textInput("reactivity_2", "Who did she react to?"),
-      selectInput("reactivity_score_2", "What was her score?",
-                  reactivity_input),
-      textInput("reactivity_distance_2", "How far away was the stranger?"),
-      textInput("reactivity_notes_2", "Describe the event"),
-
-      # Reactivity 3
-      h4("-------- Reactivity 3 --------"),
-      textInput("reactivity_3", "Who did she react to?"),
-      selectInput("reactivity_score_3", "What was her score?",
-                  reactivity_input),
-      textInput("reactivity_distance_3", "How far away was the stranger?"),
-      textInput("reactivity_notes_3", "Describe the event"),
-
-      # Reactivity 4
-      h4("-------- Reactivity 4 --------"),
-      textInput("reactivity_4", "Who did she react to?"),
-      selectInput("reactivity_score_4", "What was her score?",
-                  reactivity_input),
-      textInput("reactivity_distance_4", "How far away was the stranger?"),
-      textInput("reactivity_notes_4", "Describe the event"),
-
-      # Reactivity 5
-      h4("-------- Reactivity 5 --------"),
-      textInput("reactivity_5", "Who did she react to?"),
-      selectInput("reactivity_score_5", "What was her score?",
-                  reactivity_input),
-      textInput("reactivity_distance_5", "How far away was the stranger?"),
-      textInput("reactivity_notes_5", "Describe the event"),
-
+      lapply(1:5, function(x){
+        list(
+          h4(paste0("-------- Reactivity ", x, " --------")),
+          textInput(paste0("reactivity_", x), "Who did she react to?"),
+          selectInput(paste0("reactivity_score_", x), "What was her score?",
+                     reactivity_input),
+          textInput(paste0("reactivity_distance_", x),
+                   "How far away was the stranger?"),
+          textInput(paste0("reactivity_notes_", x), "Describe the event"))
+      }),
+      
       # Positive stranger interactions ---------------------------------
       h3("Did Riley have positive interacitons with Strangers?"),
       
-      # Positive Reactivity 1
-      h4("-------- Positive Reactivity 1 --------"),
-      textInput("pos_reactivity_1", "Who did she react to?"),
-      textInput("pos_reactivity_distance_1", "How far away was the stranger?"),
-      textInput("pos_reactivity_notes_1", "Describe the event"),
+      lapply(1:5, function(x){
+        list(     
+          h4(paste0("-------- Positive Reactivity ", x, " --------")),
+          textInput(paste0("pos_reactivity_", x), "Who did she not react to?"),
+          textInput(paste0("pos_reactivity_distance_", x),
+                    "How far away was the stranger?"),
+          textInput(paste0("pos_reactivity_notes_", x), "Describe the event"))
+      }),
       
-      # Positive Reactivity 2
-      h4("-------- Positive Reactivity 2 --------"),
-      textInput("pos_reactivity_2", "Who did she react to?"),
-      textInput("pos_reactivity_distance_2", "How far away was the stranger?"),
-      textInput("pos_reactivity_notes_2", "Describe the event"),
+      # Negative behavior at home ---------------------------------
+      h3("Did Riley have negative behaviors at home?"),
       
-      # Positive Reactivity 3
-      h4("-------- Positive Reactivity 3 --------"),
-      textInput("pos_reactivity_3", "Who did she react to?"),
-      textInput("pos_reactivity_distance_3", "How far away was the stranger?"),
-      textInput("pos_reactivity_notes_3", "Describe the event"),
+      lapply(1:5, function(x){
+        list(
+          h4(paste0("-------- Negative behaviors ", x, " --------")),
+          selectInput(paste0("neg_behavior_", x), "What was the behavior?",
+                      negative_behaiors_input),
+          textInput(paste0("neg_behavior_manual_",x),
+                    "If other, what was the behavior?"),
+          textInput(paste0("neg_behavior_notes_", x), "Describe the behavior")
+        )
+      }),
       
-      # Positive Reactivity 4
-      h4("-------- Positive Reactivity 4 --------"),
-      textInput("pos_reactivity_4", "Who did she react to?"),
-      textInput("pos_reactivity_distance_4", "How far away was the stranger?"),
-      textInput("pos_reactivity_notes_4", "Describe the event"),
-      
-      # Positive Reactivity 5
-      h4("-------- Positive Reactivity 5 --------"),
-      textInput("pos_reactivity_5", "Who did she react to?"),
-      textInput("pos_reactivity_distance_5", "How far away was the stranger?"),
-      textInput("pos_reactivity_notes_5", "Describe the event"),
+     
       
       actionButton("submit", "Submit", class = "btn-primary")
     ),
@@ -230,6 +207,26 @@ shinyApp(
       pos_reactivity <- do.call(rbind, pos_reactivity)
       
       return_list$pos_reactivity <- pos_reactivity
+      
+      ## Add negative behavior data --------------------------------
+      negative_behavior <- lapply(1:5, function(x){
+        neg_behavior_name <- paste0("neg_behavior_", x)
+        neg_behavior <- input[[neg_behavior_name]]
+        if(neg_behavior != "Pick a behavior"){
+          if(neg_behavior == "other"){
+            neg_behavior <- input[[paste0("neg_behavior_manual_",x)]]
+          }
+          neg_behavior_notes <- input[[paste0("neg_behavior_notes_", x)]]
+          return_df <- data.frame("Name" = name, "Date" = date,
+                                  "Behavior" = neg_behavior,
+                                  "Notes" = neg_behavior_notes)
+        }
+      })
+      
+      negative_behavior <- do.call(rbind, negative_behavior)
+      
+      return_list$negative_behavior <- negative_behavior
+      
       
       return_list
 
@@ -314,6 +311,25 @@ shinyApp(
                                       data$pos_reactivity)
       }
 
+      ## Negative behavior ----------------------------------------
+      existing_neg_behavior <- 
+        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
+                                                    "riley_data.xlsx"),
+                               sheet = "Negative_home_behaviors")
+      
+      
+      
+      existing_neg_behavior$Date <- 
+        openxlsx::convertToDate(existing_neg_behavior$Date)
+      
+      
+      if(is.null(data$negative_behavior)){
+        total_negative_behavior <- existing_neg_behavior
+      } else {
+        total_negative_behavior <- rbind(existing_neg_behavior,
+                                      data$negative_behavior)
+      }
+      
       ## Add to wb --------------------------------------------------
       
       # Save reaction history
@@ -363,6 +379,24 @@ shinyApp(
                              sheet = "Positive_reaction_history",
                              cols = c(1, 2, 3, 4, 5),
                              widths = c(12, 12, 16, 16, 60))
+      
+      # Save negative behaviors
+      openxlsx::addWorksheet(wb = excel_wb,
+                             sheet = "Negative_home_behaviors")
+      openxlsx::writeData(wb = excel_wb,
+                          sheet = "Negative_home_behaviors", 
+                          x = total_negative_behavior)
+      
+      openxlsx::addStyle(wb = excel_wb,
+                         sheet = "Negative_home_behaviors",
+                         style = merge_style,
+                         cols = 4,
+                         rows = 2:nrow(total_negative_behavior))
+      
+      openxlsx::setColWidths(wb = excel_wb,
+                             sheet = "Negative_home_behaviors",
+                             cols = c(1, 2, 3, 4),
+                             widths = c(12, 12, 20, 60))
       
       # Save workbook
       openxlsx::saveWorkbook(wb = excel_wb, file = save_name,
