@@ -69,10 +69,6 @@ riley_reactivity_wb <- openxlsx::createWorkbook()
 merge_style <- openxlsx::createStyle(wrapText = TRUE)
 
 # Fields I want
-# Did you give Riley mental stimulation today - 5 possible ones to fill out
-  # Drop down list
-  # Time spent
-  # Notes
 # Did Riley sleep with you? - 2 possible ones to fill out
   # Time of day
   # Amount of time
@@ -191,6 +187,21 @@ shinyApp(
           textInput(paste0("stimulation_notes_", x), "Describe the activity")
         )
       }),
+      
+      # Sleep time ---------------------------------
+      h3("Did Riley sleep with you? -----------------------------------------"),
+      
+      lapply(1:5, function(x){
+        list(
+          h4(paste0("-------- Sleep time ", x, " --------")),
+          selectInput(paste0("sleep_time_", x), "When did she sleep?",
+                      c("Morning",
+                        "Afternoon")),
+          textInput(paste0("sleep_duration_", x),
+                    "How long did she sleep?"),
+          textInput(paste0("sleep_notes_", x), "Anything to add?")
+        )
+      }),
      
       
       actionButton("submit", "Submit", class = "btn-primary")
@@ -306,7 +317,6 @@ shinyApp(
             stimulation <- input[[paste0("stimulation_manual_",x)]]
           }
           stimulation_time <- input[[paste0("stimulation_time_", x)]]
-          stimulation_day_time <- input[[paste0("stimulation_day_time_", x)]]
           stimulation_notes <- input[[paste0("stimulation_notes_", x)]]
           return_df <- data.frame("Name" = name, "Date" = date,
                                   "Activity" = stimulation,
@@ -318,6 +328,25 @@ shinyApp(
       stimulation <- do.call(rbind, stimulation)
       
       return_list$stimulation <- stimulation
+      
+      ## Add sleep data --------------------------------
+      sleep <- lapply(1:5, function(x){
+        sleep_time <- paste0("sleep_time_", x)
+        sleep <- input[[sleep_time]]
+        if( input[[paste0("sleep_duration_", x)]] != ""){
+          sleep_duration <- input[[paste0("sleep_duration_", x)]]
+          sleep_notes <- input[[paste0("sleep_notes_", x)]]
+          return_df <- data.frame("Name" = name, "Date" = date,
+                                  "Sleep_time" = sleep,
+                                  "Sleep_duration" = sleep_duration,
+                                  "Notes" = sleep_notes)
+        }
+      
+      })
+      
+      sleep <- do.call(rbind, sleep)
+      
+      return_list$sleep <- sleep
       
       return_list
 
@@ -459,6 +488,24 @@ shinyApp(
                                          data$stimulation)
       }
       
+      ## Sleep ----------------------------------------
+      existing_sleep <- 
+        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
+                                                    "riley_data.xlsx"),
+                               sheet = "Sleep")
+      
+      
+      
+      existing_sleep$Date <- 
+        openxlsx::convertToDate(existing_sleep$Date)
+      
+      
+      if(is.null(data$sleep)){
+        total_sleep <- existing_sleep
+      } else {
+        total_sleep <- rbind(existing_sleep,
+                                   data$sleep)
+      }
       
       ## Add to wb --------------------------------------------------
       
@@ -563,6 +610,24 @@ shinyApp(
                              sheet = "Stimulation_exercise",
                              cols = c(1, 2, 3, 4, 5),
                              widths = c(12, 12, 25, 16, 60))
+      
+      # Save Sleep
+      openxlsx::addWorksheet(wb = excel_wb,
+                             sheet = "Sleep")
+      openxlsx::writeData(wb = excel_wb,
+                          sheet = "Sleep", 
+                          x = total_sleep)
+      
+      openxlsx::addStyle(wb = excel_wb,
+                         sheet = "Sleep",
+                         style = merge_style,
+                         cols = 5,
+                         rows = 2:nrow(total_sleep))
+      
+      openxlsx::setColWidths(wb = excel_wb,
+                             sheet = "Sleep",
+                             cols = c(1, 2, 3, 4, 5),
+                             widths = c(12, 12, 16, 16, 60))
       
       # Save workbook
       openxlsx::saveWorkbook(wb = excel_wb, file = save_name,
