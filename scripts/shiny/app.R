@@ -33,17 +33,28 @@ negative_behaviors <- c("Barking - work",
 
 negative_behaiors_input <- c("Pick a behavior", negative_behaviors)
 
+positive_behaviors <- c("Hold back mouthing",
+                        "Little or no pulling on walk",
+                        "No barking while hugging",
+                        "Asking nicely",
+                        "Patience in the morning",
+                        "Staying in the back of the car",
+                        "Leaving rabbits",
+                        "Leaving squirrles",
+                        "Not barking before walk",
+                        "Not barking before food",
+                        "Chill with different routein",
+                        "other")
+
+positive_behaiors_input <- c("Pick a behavior", positive_behaviors)
+
+
 # Create workbook
 riley_reactivity_wb <- openxlsx::createWorkbook()
 
 merge_style <- openxlsx::createStyle(wrapText = TRUE)
 
 # Fields I want
-# Did Riley have negative behaviors with you? - 5 possible ones to fill out
-  # Type of behavior (drop down list, include other)
-  # Include a field for the other behavior. If other is selected look in this
-    # field for the behavior
-  # Notes
 # Did Riley have positive behaviors with you? - 5 opssible ones to fill out
   # Type of behavior (drop down list, include other)
   # Notes
@@ -101,7 +112,7 @@ shinyApp(
       textInput("date", labelMandatory("Date (YYYY/MM/DD)"), ""),
       
       # Stranger reactivity -----------------------------------
-      h3("Did Riley have negative interacitons with Strangers?"),
+      h3("Did Riley have negative interacitons with Strangers? --------------"),
       
       lapply(1:5, function(x){
         list(
@@ -115,7 +126,7 @@ shinyApp(
       }),
       
       # Positive stranger interactions ---------------------------------
-      h3("Did Riley have positive interacitons with Strangers?"),
+      h3("Did Riley have positive interacitons with Strangers? --------------"),
       
       lapply(1:5, function(x){
         list(     
@@ -127,7 +138,7 @@ shinyApp(
       }),
       
       # Negative behavior at home ---------------------------------
-      h3("Did Riley have negative behaviors at home?"),
+      h3("Did Riley have negative behaviors at home? ------------------------"),
       
       lapply(1:5, function(x){
         list(
@@ -137,6 +148,20 @@ shinyApp(
           textInput(paste0("neg_behavior_manual_",x),
                     "If other, what was the behavior?"),
           textInput(paste0("neg_behavior_notes_", x), "Describe the behavior")
+        )
+      }),
+      
+      # Positive behavior at home ---------------------------------
+      h3("Did Riley have positive behaviors at home? ------------------------"),
+      
+      lapply(1:5, function(x){
+        list(
+          h4(paste0("-------- Positive behaviors ", x, " --------")),
+          selectInput(paste0("pos_behavior_", x), "What was the behavior?",
+                      positive_behaiors_input),
+          textInput(paste0("pos_behavior_manual_",x),
+                    "If other, what was the behavior?"),
+          textInput(paste0("pos_behavior_notes_", x), "Describe the behavior")
         )
       }),
       
@@ -226,6 +251,26 @@ shinyApp(
       negative_behavior <- do.call(rbind, negative_behavior)
       
       return_list$negative_behavior <- negative_behavior
+      
+      ## Add positive behavior data --------------------------------
+      positive_behavior <- lapply(1:5, function(x){
+        pos_behavior_name <- paste0("pos_behavior_", x)
+        pos_behavior <- input[[pos_behavior_name]]
+        if(pos_behavior != "Pick a behavior"){
+          if(pos_behavior == "other"){
+            pos_behavior <- input[[paste0("pos_behavior_manual_",x)]]
+          }
+          pos_behavior_notes <- input[[paste0("pos_behavior_notes_", x)]]
+          return_df <- data.frame("Name" = name, "Date" = date,
+                                  "Behavior" = pos_behavior,
+                                  "Notes" = pos_behavior_notes)
+        }
+      })
+      
+      positive_behavior <- do.call(rbind, positive_behavior)
+      
+      return_list$positive_behavior <- positive_behavior
+      
       
       
       return_list
@@ -330,6 +375,25 @@ shinyApp(
                                       data$negative_behavior)
       }
       
+      ## Positive behavior ----------------------------------------
+      existing_pos_behavior <- 
+        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
+                                                    "riley_data.xlsx"),
+                               sheet = "Positive_home_behaviors")
+      
+      
+      
+      existing_pos_behavior$Date <- 
+        openxlsx::convertToDate(existing_pos_behavior$Date)
+      
+      
+      if(is.null(data$positive_behavior)){
+        total_positive_behavior <- existing_pos_behavior
+      } else {
+        total_positive_behavior <- rbind(existing_pos_behavior,
+                                         data$positive_behavior)
+      }
+      
       ## Add to wb --------------------------------------------------
       
       # Save reaction history
@@ -397,6 +461,24 @@ shinyApp(
                              sheet = "Negative_home_behaviors",
                              cols = c(1, 2, 3, 4),
                              widths = c(12, 12, 20, 60))
+      
+      # Save positive behaviors
+      openxlsx::addWorksheet(wb = excel_wb,
+                             sheet = "Positive_home_behaviors")
+      openxlsx::writeData(wb = excel_wb,
+                          sheet = "Positive_home_behaviors", 
+                          x = total_positive_behavior)
+      
+      openxlsx::addStyle(wb = excel_wb,
+                         sheet = "Positive_home_behaviors",
+                         style = merge_style,
+                         cols = 4,
+                         rows = 2:nrow(total_positive_behavior))
+      
+      openxlsx::setColWidths(wb = excel_wb,
+                             sheet = "Positive_home_behaviors",
+                             cols = c(1, 2, 3, 4),
+                             widths = c(12, 12, 25, 60))
       
       # Save workbook
       openxlsx::saveWorkbook(wb = excel_wb, file = save_name,
