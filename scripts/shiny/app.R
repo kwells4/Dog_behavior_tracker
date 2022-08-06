@@ -49,15 +49,26 @@ positive_behaviors <- c("Hold back mouthing",
 positive_behaiors_input <- c("Pick a behavior", positive_behaviors)
 
 
+mental_stimulation <- c("Lick mat",
+                        "Kong", 
+                        "Food ball (any shape)",
+                        "Snuffle mat",
+                        "Kong wobble",
+                        "Collagen chew",
+                        "Bully stick",
+                        "Topple",
+                        "Walk",
+                        "Play",
+                        "other")
+
+mental_stimulation_input <- c("Pick a behavior", mental_stimulation)
+
 # Create workbook
 riley_reactivity_wb <- openxlsx::createWorkbook()
 
 merge_style <- openxlsx::createStyle(wrapText = TRUE)
 
 # Fields I want
-# Did Riley have positive behaviors with you? - 5 opssible ones to fill out
-  # Type of behavior (drop down list, include other)
-  # Notes
 # Did you give Riley mental stimulation today - 5 possible ones to fill out
   # Drop down list
   # Time spent
@@ -165,6 +176,21 @@ shinyApp(
         )
       }),
       
+      # Mental simulation/exercise ---------------------------------
+      h3("Did Riley have mental stimulation or exercise? --------------------"),
+      
+      lapply(1:5, function(x){
+        list(
+          h4(paste0("-------- Stimulation/exercise ", x, " --------")),
+          selectInput(paste0("stimulation_", x), "What was the activity?",
+                      mental_stimulation_input),
+          textInput(paste0("stimulation_manual_",x),
+                    "If other, what was the activity?"),
+          textInput(paste0("stimulation_time_", x),
+                    "How long did the activity last?"),
+          textInput(paste0("stimulation_notes_", x), "Describe the activity")
+        )
+      }),
      
       
       actionButton("submit", "Submit", class = "btn-primary")
@@ -271,7 +297,27 @@ shinyApp(
       
       return_list$positive_behavior <- positive_behavior
       
+      ## Add stimulation and exercise data --------------------------------
+      stimulation <- lapply(1:5, function(x){
+        stimulation_name <- paste0("stimulation_", x)
+        stimulation <- input[[stimulation_name]]
+        if(stimulation != "Pick a behavior"){
+          if(stimulation == "other"){
+            stimulation <- input[[paste0("stimulation_manual_",x)]]
+          }
+          stimulation_time <- input[[paste0("stimulation_time_", x)]]
+          stimulation_day_time <- input[[paste0("stimulation_day_time_", x)]]
+          stimulation_notes <- input[[paste0("stimulation_notes_", x)]]
+          return_df <- data.frame("Name" = name, "Date" = date,
+                                  "Activity" = stimulation,
+                                  "Complete_time" = stimulation_time,
+                                  "Notes" = stimulation_notes)
+        }
+      })
       
+      stimulation <- do.call(rbind, stimulation)
+      
+      return_list$stimulation <- stimulation
       
       return_list
 
@@ -394,6 +440,26 @@ shinyApp(
                                          data$positive_behavior)
       }
       
+      ## Stimulation/exercise ----------------------------------------
+      existing_stimulation <- 
+        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
+                                                    "riley_data.xlsx"),
+                               sheet = "Stimulation_exercise")
+      
+      
+      
+      existing_stimulation$Date <- 
+        openxlsx::convertToDate(existing_stimulation$Date)
+      
+
+      if(is.null(data$stimulation)){
+        total_stimulation <- existing_stimulation
+      } else {
+        total_stimulation <- rbind(existing_stimulation,
+                                         data$stimulation)
+      }
+      
+      
       ## Add to wb --------------------------------------------------
       
       # Save reaction history
@@ -479,6 +545,24 @@ shinyApp(
                              sheet = "Positive_home_behaviors",
                              cols = c(1, 2, 3, 4),
                              widths = c(12, 12, 25, 60))
+      
+      # Save Stimulation
+      openxlsx::addWorksheet(wb = excel_wb,
+                             sheet = "Stimulation_exercise")
+      openxlsx::writeData(wb = excel_wb,
+                          sheet = "Stimulation_exercise", 
+                          x = total_stimulation)
+      
+      openxlsx::addStyle(wb = excel_wb,
+                         sheet = "Stimulation_exercise",
+                         style = merge_style,
+                         cols = 5,
+                         rows = 2:nrow(total_stimulation))
+      
+      openxlsx::setColWidths(wb = excel_wb,
+                             sheet = "Stimulation_exercise",
+                             cols = c(1, 2, 3, 4, 5),
+                             widths = c(12, 12, 25, 16, 60))
       
       # Save workbook
       openxlsx::saveWorkbook(wb = excel_wb, file = save_name,
