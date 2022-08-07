@@ -816,8 +816,9 @@ shinyApp(
       
       
       # Move file to drive
-      drive_upload(save_name, drive_file, type = "spreadsheet",
-                   overwrite = TRUE)
+      # drive_upload(save_name, drive_file, type = "spreadsheet",
+      #              overwrite = TRUE)
+      drive_update(file = drive_file, media = save_name)
       
     }
 
