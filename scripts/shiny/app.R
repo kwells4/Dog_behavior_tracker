@@ -69,10 +69,6 @@ riley_reactivity_wb <- openxlsx::createWorkbook()
 merge_style <- openxlsx::createStyle(wrapText = TRUE)
 
 # Fields I want
-# Did Riley sleep with you? - 2 possible ones to fill out
-  # Time of day
-  # Amount of time
-  # Notes
 # Did Riley spend time in her crate?
   # Amount of time
   # Notes
@@ -202,6 +198,14 @@ shinyApp(
           textInput(paste0("sleep_notes_", x), "Anything to add?")
         )
       }),
+      
+      # Crate time ---------------------------------
+      h3("Did Riley spend time in her crate?---------------------------------"),
+      
+      selectInput("crate_alone", "Were you home or out?",
+                  c("Home", "Out")),
+      textInput("crate_time", "How long was she in her crate?"),
+      textInput("crate_notes", "How was she when you took her out?"),
      
       
       actionButton("submit", "Submit", class = "btn-primary")
@@ -347,6 +351,21 @@ shinyApp(
       sleep <- do.call(rbind, sleep)
       
       return_list$sleep <- sleep
+      
+      ## Add Crate data --------------------------------
+      crate_time <- input[["crate_time"]]
+      if(crate_time != ""){
+        crate_alone <- input[["crate_alone"]]
+        crate_notes <- input[["crate_notes"]]
+        crate <- data.frame("Name" = name, "Date" = date,
+                            "Home_out" = crate_alone,
+                            "Crate_time" = crate_time,
+                            "Notes" = crate_notes)
+      } else {
+        crate <- NULL
+      }
+      
+      return_list$crate <- crate
       
       return_list
 
@@ -507,6 +526,27 @@ shinyApp(
                                    data$sleep)
       }
       
+      ## Crate ----------------------------------------
+      existing_crate <- 
+        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
+                                                    "riley_data.xlsx"),
+                               sheet = "Crate")
+      
+      
+      
+      existing_crate$Date <- 
+        openxlsx::convertToDate(existing_crate$Date)
+      
+      
+      if(is.null(data$crate)){
+        total_crate <- existing_crate
+      } else {
+        total_crate <- rbind(existing_crate,
+                             data$crate)
+      }
+      
+      print(total_crate)
+      
       ## Add to wb --------------------------------------------------
       
       # Save reaction history
@@ -626,6 +666,24 @@ shinyApp(
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Sleep",
+                             cols = c(1, 2, 3, 4, 5),
+                             widths = c(12, 12, 16, 16, 60))
+      
+      # Save Crate
+      openxlsx::addWorksheet(wb = excel_wb,
+                             sheet = "Crate")
+      openxlsx::writeData(wb = excel_wb,
+                          sheet = "Crate", 
+                          x = total_crate)
+      
+      openxlsx::addStyle(wb = excel_wb,
+                         sheet = "Crate",
+                         style = merge_style,
+                         cols = 5,
+                         rows = 2:nrow(total_crate))
+      
+      openxlsx::setColWidths(wb = excel_wb,
+                             sheet = "Crate",
                              cols = c(1, 2, 3, 4, 5),
                              widths = c(12, 12, 16, 16, 60))
       
