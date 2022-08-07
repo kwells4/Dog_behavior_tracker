@@ -200,13 +200,34 @@ shinyApp(
       }),
       
       # Crate time ---------------------------------
-      h3("Did Riley spend time in her crate?---------------------------------"),
+      h3("Did Riley spend time in her crate? --------------------------------"),
       
       selectInput("crate_alone", "Were you home or out?",
                   c("Home", "Out")),
       textInput("crate_time", "How long was she in her crate?"),
       textInput("crate_notes", "How was she when you took her out?"),
      
+      
+      # Other strange behaviors ---------------------------------
+      h3("Did Riley have any other strange behaviors or anxieties? ----------"),
+      
+      lapply(1:5, function(x){
+        list(
+          h4(paste0("-------- Anxieties/behaviors ", x, " --------")),
+          textInput(paste0("anxieties_", x),
+                      "What was the behavior/anxiety?"),
+          textInput(paste0("anxieties_notes_", x),
+                    "Describe the behavior or anxiety")
+        )
+      }),
+      
+      # Things that worked ---------------------------------
+      h3("Did you do anything that worked well? -----------------------------"),
+      h5("For example, that calmed Riley down at home or helped he on a walk."),
+      
+      textInput("worked_notes", "Describe what you did."),
+      
+      
       
       actionButton("submit", "Submit", class = "btn-primary")
     ),
@@ -366,6 +387,34 @@ shinyApp(
       }
       
       return_list$crate <- crate
+      
+      ## Add anxieties data --------------------------------
+      anxieties <- lapply(1:5, function(x){
+        anxieties_input <- paste0("anxieties_", x)
+        anxieties <- input[[anxieties_input]]
+        if(anxieties != ""){
+          anxieties_notes <- input[[paste0("anxieties_notes_", x)]]
+          return_df <- data.frame("Name" = name, "Date" = date,
+                                  "Anxiety_behavior" = anxieties,
+                                  "Notes" = anxieties_notes)
+        }
+        
+      })
+      
+      anxieties <- do.call(rbind, anxieties)
+      
+      return_list$anxieties <- anxieties
+      
+      ## Add things that woked data --------------------------------
+      worked_notes <- input[["worked_notes"]]
+      if(worked_notes != ""){
+        worked <- data.frame("Name" = name, "Date" = date,
+                            "Notes" = worked_notes)
+      } else {
+        worked <- NULL
+      }
+      
+      return_list$worked <- worked
       
       return_list
 
@@ -545,8 +594,46 @@ shinyApp(
                              data$crate)
       }
       
-      print(total_crate)
+
+      ## Anxieties ----------------------------------------
+      existing_anxieities <- 
+        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
+                                                    "riley_data.xlsx"),
+                               sheet = "Anxieties")
       
+      
+      
+      existing_anxieities$Date <- 
+        openxlsx::convertToDate(existing_anxieities$Date)
+      
+      
+      if(is.null(data$anxieties)){
+        total_anxieites <- existing_anxieities
+      } else {
+        total_anxieites <- rbind(existing_anxieities,
+                             data$anxieties)
+      }
+      
+      
+      ## Things that worked ----------------------------------------
+      exisiting_worked <- 
+        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
+                                                    "riley_data.xlsx"),
+                               sheet = "Things_worked")
+      
+      
+      
+      exisiting_worked$Date <- 
+        openxlsx::convertToDate(exisiting_worked$Date)
+      
+      
+      if(is.null(data$worked)){
+        total_worked <- exisiting_worked
+      } else {
+        total_worked <- rbind(exisiting_worked,
+                                 data$worked)
+      }
+
       ## Add to wb --------------------------------------------------
       
       # Save reaction history
@@ -686,6 +773,42 @@ shinyApp(
                              sheet = "Crate",
                              cols = c(1, 2, 3, 4, 5),
                              widths = c(12, 12, 16, 16, 60))
+      
+      # Save Anxieties
+      openxlsx::addWorksheet(wb = excel_wb,
+                             sheet = "Anxieties")
+      openxlsx::writeData(wb = excel_wb,
+                          sheet = "Anxieties", 
+                          x = total_anxieites)
+      
+      openxlsx::addStyle(wb = excel_wb,
+                         sheet = "Anxieties",
+                         style = merge_style,
+                         cols = 4,
+                         rows = 2:nrow(total_anxieites))
+      
+      openxlsx::setColWidths(wb = excel_wb,
+                             sheet = "Anxieties",
+                             cols = c(1, 2, 3, 4),
+                             widths = c(12, 12, 16, 60))
+      
+      # Save things that worked
+      openxlsx::addWorksheet(wb = excel_wb,
+                             sheet = "Things_worked")
+      openxlsx::writeData(wb = excel_wb,
+                          sheet = "Things_worked", 
+                          x = total_worked)
+      
+      openxlsx::addStyle(wb = excel_wb,
+                         sheet = "Things_worked",
+                         style = merge_style,
+                         cols = 3,
+                         rows = 2:nrow(total_worked))
+      
+      openxlsx::setColWidths(wb = excel_wb,
+                             sheet = "Things_worked",
+                             cols = c(1, 2, 3),
+                             widths = c(12, 12, 60))
       
       # Save workbook
       openxlsx::saveWorkbook(wb = excel_wb, file = save_name,
