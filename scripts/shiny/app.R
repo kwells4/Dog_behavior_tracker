@@ -68,6 +68,17 @@ riley_reactivity_wb <- openxlsx::createWorkbook()
 
 merge_style <- openxlsx::createStyle(wrapText = TRUE)
 
+red_style <- openxlsx::createStyle(bgFill = "#cc4125")
+light_red_style <- openxlsx::createStyle(bgFill = "#e06666")
+orange_style <- openxlsx::createStyle(bgFill = "#f6b26b")
+yellow_style <- openxlsx::createStyle(bgFill = "#ffd966")
+green_style <- openxlsx::createStyle(bgFill = "#93c47d")
+
+all_styles <- list(green_style, yellow_style, orange_style, light_red_style,
+                   red_style)
+
+names(all_styles) <- reactivity_ratings
+
 # Fields I want
 # Did Riley spend time in her crate?
   # Amount of time
@@ -656,6 +667,18 @@ shinyApp(
                              sheet = "Negative_reaction_history",
                              cols = c(1, 2, 3, 4, 5, 6),
                              widths = c(12, 12, 16, 30, 16, 60))
+      
+      # Add color scale
+      invisible(lapply(names(all_styles), function(reactivity_type){
+        openxlsx::conditionalFormatting(wb = excel_wb,
+                                        sheet = "Negative_reaction_history",
+                                        cols = 4,
+                                        rows = 1:nrow(total_reactivity) + 1,
+                                        rule = reactivity_type,
+                                        type = "contains",
+                                        style = all_styles[[reactivity_type]])
+      }))
+
       
       # Save tracker
       openxlsx::addWorksheet(wb = excel_wb,
