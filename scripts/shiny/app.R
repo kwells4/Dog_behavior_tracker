@@ -277,6 +277,9 @@ shinyApp(
       
       reactivity <- do.call(rbind, reactivity)
       
+      return_list$reactivity <- reactivity
+
+      
       ## Add positive reactivity data --------------------------------
       pos_reactivity <- lapply(1:5, function(x){
         pos_reactivity_name <- paste0("pos_reactivity_", x)
@@ -647,7 +650,7 @@ shinyApp(
                          sheet = "Negative_reaction_history",
                          style = merge_style,
                          cols = 6,
-                         rows = 2:nrow(total_reactivity))
+                         rows = 1:nrow(total_reactivity) + 1)
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Negative_reaction_history",
@@ -677,7 +680,7 @@ shinyApp(
                          sheet = "Positive_reaction_history",
                          style = merge_style,
                          cols = 5,
-                         rows = 2:nrow(total_pos_reactivity))
+                         rows = 1:nrow(total_pos_reactivity) + 1)
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Positive_reaction_history",
@@ -695,7 +698,7 @@ shinyApp(
                          sheet = "Negative_home_behaviors",
                          style = merge_style,
                          cols = 4,
-                         rows = 2:nrow(total_negative_behavior))
+                         rows = 1:nrow(total_negative_behavior) + 1)
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Negative_home_behaviors",
@@ -713,7 +716,7 @@ shinyApp(
                          sheet = "Positive_home_behaviors",
                          style = merge_style,
                          cols = 4,
-                         rows = 2:nrow(total_positive_behavior))
+                         rows = 1:nrow(total_positive_behavior) + 1)
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Positive_home_behaviors",
@@ -731,7 +734,7 @@ shinyApp(
                          sheet = "Stimulation_exercise",
                          style = merge_style,
                          cols = 5,
-                         rows = 2:nrow(total_stimulation))
+                         rows = 1:nrow(total_stimulation) + 1)
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Stimulation_exercise",
@@ -749,7 +752,7 @@ shinyApp(
                          sheet = "Sleep",
                          style = merge_style,
                          cols = 5,
-                         rows = 2:nrow(total_sleep))
+                         rows = 1:nrow(total_sleep) + 1)
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Sleep",
@@ -767,7 +770,7 @@ shinyApp(
                          sheet = "Crate",
                          style = merge_style,
                          cols = 5,
-                         rows = 2:nrow(total_crate))
+                         rows = 1:nrow(total_crate) + 1)
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Crate",
@@ -785,7 +788,7 @@ shinyApp(
                          sheet = "Anxieties",
                          style = merge_style,
                          cols = 4,
-                         rows = 2:nrow(total_anxieites))
+                         rows = 1:nrow(total_anxieites) + 1)
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Anxieties",
@@ -803,7 +806,7 @@ shinyApp(
                          sheet = "Things_worked",
                          style = merge_style,
                          cols = 3,
-                         rows = 2:nrow(total_worked))
+                         rows = 1:nrow(total_worked) + 1)
       
       openxlsx::setColWidths(wb = excel_wb,
                              sheet = "Things_worked",
