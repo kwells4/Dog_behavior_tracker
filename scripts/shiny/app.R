@@ -61,10 +61,7 @@ mental_stimulation <- c("Lick mat",
                         "Play",
                         "other")
 
-mental_stimulation_input <- c("Pick a behavior", mental_stimulation)
-
-# Create workbook
-riley_reactivity_wb <- openxlsx::createWorkbook()
+mental_stimulation_input <- c("Pick an activity", mental_stimulation)
 
 merge_style <- openxlsx::createStyle(wrapText = TRUE)
 
@@ -351,7 +348,7 @@ shinyApp(
       stimulation <- lapply(1:5, function(x){
         stimulation_name <- paste0("stimulation_", x)
         stimulation <- input[[stimulation_name]]
-        if(stimulation != "Pick a behavior"){
+        if(stimulation != "Pick an activity"){
           if(stimulation == "other"){
             stimulation <- input[[paste0("stimulation_manual_",x)]]
           }
@@ -852,6 +849,10 @@ shinyApp(
 
     # Close the form once submitted
     observeEvent(input$submit, {
+      
+      # Create workbook
+      riley_reactivity_wb <- openxlsx::createWorkbook()
+      
       save_data(data = formData(),
                 excel_wb = riley_reactivity_wb,
                 save_name = file.path(save_dir, "riley_reaction_history.xlsx"))
