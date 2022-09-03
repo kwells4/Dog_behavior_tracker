@@ -43,7 +43,7 @@ positive_behaviors <- c("Hold back mouthing",
                         "Leaving squirrles",
                         "Not barking before walk",
                         "Not barking before food",
-                        "Chill with different routein",
+                        "Chill with different routine",
                         "other")
 
 positive_behaiors_input <- c("Pick a behavior", positive_behaviors)
@@ -76,13 +76,8 @@ all_styles <- list(green_style, yellow_style, orange_style, light_red_style,
 
 names(all_styles) <- reactivity_ratings
 
-# Fields I want
-# Did Riley spend time in her crate?
-  # Amount of time
-  # Notes
-# Did Riley have any other strange behaviors or anxieties? - 5 possible
-  # Notes
-
+# Still to add - 
+# Riley muzzle practice time
 
 
 save_dir <- file.path("files")
@@ -90,6 +85,333 @@ save_dir <- file.path("files")
 responsesDir <- save_dir
 
 ifelse(!dir.exists(save_dir), dir.create(save_dir), "TRUE")
+
+# Functions --------------------------------------------------------------------
+save_data <- function(data, excel_wb, save_name){
+  excel_save_file <- file.path(save_dir, "riley_data.xlsx")
+  
+  
+  # When you add in downloading, add in a second Rbind
+  existing_excel_file <- drive_download(drive_file,
+                                        path = excel_save_file,
+                                        overwrite = TRUE)
+  
+
+  ## Reactivity addition --------------------------------------
+  total_reactivity <- get_dataframe(excel_file = excel_save_file,
+                                sheet_name = "Negative_reaction_history",
+                                list_slot = "reactivity",
+                                data = data)
+  
+  # Add in days since last reactive
+  days_since_reactive <- c("NA", diff(total_reactivity$Date))
+  total_reactivity$Days_since_last_event <- days_since_reactive
+  
+
+  # Make the tracker
+  existing_tracker <- 
+    openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
+                                                "riley_data.xlsx"),
+                           sheet = "Reactivity_tracker")
+  
+  if(is.null(data$reactivity)){
+    total_tracker <- existing_tracker
+  }
+  
+  total_tracker <- lapply(reactivity_ratings, function(x){
+    subset_reactivity <- total_reactivity %>%
+      filter(Score == x)
+    
+    if(nrow(subset_reactivity) > 0){
+      last_reaction <- subset_reactivity[nrow(subset_reactivity),]$Date
+      
+      time_since_reaction <- as.numeric(as.Date(data$date) - 
+                                          as.Date(last_reaction))
+      
+      
+    } else {
+      time_since_reaction <- "NA"
+    }
+    
+    return_data <- data.frame("Reaction" = x,
+                              "Days_since_reaction" = time_since_reaction)
+    
+    return(data.frame("Reaction" = x,
+                      "Days_since_reaction" = time_since_reaction))
+    
+  })
+  
+  total_tracker <- do.call(rbind, total_tracker)
+  
+  ## Positive reactivity ----------------------------------------
+  total_pos_reactivity <- get_dataframe(excel_file = excel_save_file,
+                                        sheet_name = "Positive_reaction_history",
+                                        list_slot = "pos_reactivity",
+                                        data = data)
+
+  
+  ## Negative behavior ----------------------------------------
+  total_negative_behavior <- get_dataframe(excel_file = excel_save_file,
+                                        sheet_name = "Negative_home_behaviors",
+                                        list_slot = "negative_behavior",
+                                        data = data)
+      
+  
+  ## Positive behavior ----------------------------------------
+  total_positive_behavior <- get_dataframe(excel_file = excel_save_file,
+                                           sheet_name = "Positive_home_behaviors",
+                                           list_slot = "positive_behavior",
+                                           data = data)
+  
+  ## Stimulation/exercise ----------------------------------------
+  total_stimulation <- get_dataframe(excel_file = excel_save_file,
+                                     sheet_name = "Stimulation_exercise",
+                                     list_slot = "stimulation",
+                                     data = data)
+  
+  ## Sleep ----------------------------------------
+  total_sleep <- get_dataframe(excel_file = excel_save_file,
+                               sheet_name = "Sleep",
+                               list_slot = "sleep",
+                               data = data)
+  
+  ## Crate ----------------------------------------
+  total_crate <- get_dataframe(excel_file = excel_save_file,
+                               sheet_name = "Crate",
+                               list_slot = "crate",
+                               data = data)
+
+  ## Anxieties ----------------------------------------
+  total_anxieites <- get_dataframe(excel_file = excel_save_file,
+                                   sheet_name = "Anxieties",
+                                   list_slot = "anxieties",
+                                   data = data)
+  
+  ## Things that worked ----------------------------------------
+  total_worked <- get_dataframe(excel_file = excel_save_file,
+                                sheet_name = "Things_worked",
+                                list_slot = "worked",
+                                data = data)
+
+  ## Add to wb --------------------------------------------------
+  
+  # Save reaction history
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Negative_reaction_history")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Negative_reaction_history", 
+                      x = total_reactivity)
+  
+  openxlsx::addStyle(wb = excel_wb,
+                     sheet = "Negative_reaction_history",
+                     style = merge_style,
+                     cols = 6,
+                     rows = 1:nrow(total_reactivity) + 1)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Negative_reaction_history",
+                         cols = c(1, 2, 3, 4, 5, 6),
+                         widths = c(12, 12, 16, 30, 16, 60))
+  
+  # Add color scale
+  invisible(lapply(names(all_styles), function(reactivity_type){
+    openxlsx::conditionalFormatting(wb = excel_wb,
+                                    sheet = "Negative_reaction_history",
+                                    cols = 4,
+                                    rows = 1:nrow(total_reactivity) + 1,
+                                    rule = reactivity_type,
+                                    type = "contains",
+                                    style = all_styles[[reactivity_type]])
+  }))
+  
+  
+  # Save tracker
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Reactivity_tracker")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Reactivity_tracker", 
+                      x = total_tracker)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Reactivity_tracker",
+                         cols = c(1, 2),
+                         widths = c(30, 12))
+  
+  # Save positive reaction history
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Positive_reaction_history")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Positive_reaction_history", 
+                      x = total_pos_reactivity)
+  
+  openxlsx::addStyle(wb = excel_wb,
+                     sheet = "Positive_reaction_history",
+                     style = merge_style,
+                     cols = 5,
+                     rows = 1:nrow(total_pos_reactivity) + 1)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Positive_reaction_history",
+                         cols = c(1, 2, 3, 4, 5),
+                         widths = c(12, 12, 16, 16, 60))
+  
+  # Save negative behaviors
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Negative_home_behaviors")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Negative_home_behaviors", 
+                      x = total_negative_behavior)
+  
+  openxlsx::addStyle(wb = excel_wb,
+                     sheet = "Negative_home_behaviors",
+                     style = merge_style,
+                     cols = 4,
+                     rows = 1:nrow(total_negative_behavior) + 1)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Negative_home_behaviors",
+                         cols = c(1, 2, 3, 4),
+                         widths = c(12, 12, 20, 60))
+  
+  # Save positive behaviors
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Positive_home_behaviors")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Positive_home_behaviors", 
+                      x = total_positive_behavior)
+  
+  openxlsx::addStyle(wb = excel_wb,
+                     sheet = "Positive_home_behaviors",
+                     style = merge_style,
+                     cols = 4,
+                     rows = 1:nrow(total_positive_behavior) + 1)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Positive_home_behaviors",
+                         cols = c(1, 2, 3, 4),
+                         widths = c(12, 12, 25, 60))
+  
+  # Save Stimulation
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Stimulation_exercise")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Stimulation_exercise", 
+                      x = total_stimulation)
+  
+  openxlsx::addStyle(wb = excel_wb,
+                     sheet = "Stimulation_exercise",
+                     style = merge_style,
+                     cols = 5,
+                     rows = 1:nrow(total_stimulation) + 1)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Stimulation_exercise",
+                         cols = c(1, 2, 3, 4, 5),
+                         widths = c(12, 12, 25, 16, 60))
+  
+  # Save Sleep
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Sleep")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Sleep", 
+                      x = total_sleep)
+  
+  openxlsx::addStyle(wb = excel_wb,
+                     sheet = "Sleep",
+                     style = merge_style,
+                     cols = 5,
+                     rows = 1:nrow(total_sleep) + 1)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Sleep",
+                         cols = c(1, 2, 3, 4, 5),
+                         widths = c(12, 12, 16, 16, 60))
+  
+  # Save Crate
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Crate")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Crate", 
+                      x = total_crate)
+  
+  openxlsx::addStyle(wb = excel_wb,
+                     sheet = "Crate",
+                     style = merge_style,
+                     cols = 5,
+                     rows = 1:nrow(total_crate) + 1)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Crate",
+                         cols = c(1, 2, 3, 4, 5),
+                         widths = c(12, 12, 16, 16, 60))
+  
+  # Save Anxieties
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Anxieties")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Anxieties", 
+                      x = total_anxieites)
+  
+  openxlsx::addStyle(wb = excel_wb,
+                     sheet = "Anxieties",
+                     style = merge_style,
+                     cols = 4,
+                     rows = 1:nrow(total_anxieites) + 1)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Anxieties",
+                         cols = c(1, 2, 3, 4),
+                         widths = c(12, 12, 16, 60))
+  
+  # Save things that worked
+  openxlsx::addWorksheet(wb = excel_wb,
+                         sheet = "Things_worked")
+  openxlsx::writeData(wb = excel_wb,
+                      sheet = "Things_worked", 
+                      x = total_worked)
+  
+  openxlsx::addStyle(wb = excel_wb,
+                     sheet = "Things_worked",
+                     style = merge_style,
+                     cols = 3,
+                     rows = 1:nrow(total_worked) + 1)
+  
+  openxlsx::setColWidths(wb = excel_wb,
+                         sheet = "Things_worked",
+                         cols = c(1, 2, 3),
+                         widths = c(12, 12, 60))
+  
+  # Save workbook
+  openxlsx::saveWorkbook(wb = excel_wb, file = save_name,
+                         overwrite = TRUE)
+  
+  
+  # Move file to drive
+  # drive_upload(save_name, drive_file, type = "spreadsheet",
+  #              overwrite = TRUE)
+  drive_update(file = drive_file, media = save_name)
+  
+}
+
+get_dataframe <- function(excel_file, sheet_name, list_slot, data){
+  existing_dataframe <- 
+    openxlsx::readWorkbook(xlsxFile = excel_file,
+                           sheet = sheet_name)
+  
+  
+  existing_dataframe$Date <- 
+    openxlsx::convertToDate(existing_dataframe$Date)
+  
+  
+  if(is.null(data[[list_slot]])){
+    return_dataframe <- existing_dataframe
+  } else {
+    return_dataframe <- rbind(existing_dataframe,
+                                  data[[list_slot]])
+  }
+  
+  return(return_dataframe)
+}
 
 epochTime <- function() {
   as.integer(Sys.time())
@@ -105,7 +427,7 @@ labelMandatory <- function(label) {
 appCSS <-
   ".mandatory_star { color: red; }"
 
-
+# App --------------------------------------------------------------------------
 shinyApp(
   ui = fluidPage(
     shinyjs::useShinyjs(),
@@ -122,7 +444,7 @@ shinyApp(
       textInput("name", labelMandatory("Name"), ""),
       textInput("date", labelMandatory("Date (YYYY/MM/DD)"), ""),
       
-      # Stranger reactivity -----------------------------------
+      ## Stranger reactivity -----------------------------------
       h3("Did Riley have negative interacitons with Strangers? --------------"),
       
       lapply(1:5, function(x){
@@ -136,7 +458,7 @@ shinyApp(
           textInput(paste0("reactivity_notes_", x), "Describe the event"))
       }),
       
-      # Positive stranger interactions ---------------------------------
+      ## Positive stranger interactions ---------------------------------
       h3("Did Riley have positive interacitons with Strangers? --------------"),
       
       lapply(1:5, function(x){
@@ -148,7 +470,7 @@ shinyApp(
           textInput(paste0("pos_reactivity_notes_", x), "Describe the event"))
       }),
       
-      # Negative behavior at home ---------------------------------
+      ## Negative behavior at home ---------------------------------
       h3("Did Riley have negative behaviors at home? ------------------------"),
       
       lapply(1:5, function(x){
@@ -162,7 +484,7 @@ shinyApp(
         )
       }),
       
-      # Positive behavior at home ---------------------------------
+      ## Positive behavior at home ---------------------------------
       h3("Did Riley have positive behaviors at home? ------------------------"),
       
       lapply(1:5, function(x){
@@ -176,7 +498,7 @@ shinyApp(
         )
       }),
       
-      # Mental simulation/exercise ---------------------------------
+      ## Mental simulation/exercise ---------------------------------
       h3("Did Riley have mental stimulation or exercise? --------------------"),
       
       lapply(1:5, function(x){
@@ -192,7 +514,7 @@ shinyApp(
         )
       }),
       
-      # Sleep time ---------------------------------
+      ## Sleep time ---------------------------------
       h3("Did Riley sleep with you? -----------------------------------------"),
       
       lapply(1:5, function(x){
@@ -207,7 +529,7 @@ shinyApp(
         )
       }),
       
-      # Crate time ---------------------------------
+      ## Crate time ---------------------------------
       h3("Did Riley spend time in her crate? --------------------------------"),
       
       selectInput("crate_alone", "Were you home or out?",
@@ -216,7 +538,7 @@ shinyApp(
       textInput("crate_notes", "How was she when you took her out?"),
      
       
-      # Other strange behaviors ---------------------------------
+      ## Other strange behaviors ---------------------------------
       h3("Did Riley have any other strange behaviors or anxieties? ----------"),
       
       lapply(1:5, function(x){
@@ -229,7 +551,7 @@ shinyApp(
         )
       }),
       
-      # Things that worked ---------------------------------
+      ## Things that worked ---------------------------------
       h3("Did you do anything that worked well? -----------------------------"),
       h5("For example, that calmed Riley down at home or helped he on a walk."),
       
@@ -288,7 +610,7 @@ shinyApp(
       return_list$reactivity <- reactivity
 
       
-      ## Add positive reactivity data --------------------------------
+      ### Add positive reactivity data --------------------------------
       pos_reactivity <- lapply(1:5, function(x){
         pos_reactivity_name <- paste0("pos_reactivity_", x)
         pos_reactivity_person <- input[[pos_reactivity_name]]
@@ -306,7 +628,7 @@ shinyApp(
       
       return_list$pos_reactivity <- pos_reactivity
       
-      ## Add negative behavior data --------------------------------
+      ### Add negative behavior data --------------------------------
       negative_behavior <- lapply(1:5, function(x){
         neg_behavior_name <- paste0("neg_behavior_", x)
         neg_behavior <- input[[neg_behavior_name]]
@@ -325,7 +647,7 @@ shinyApp(
       
       return_list$negative_behavior <- negative_behavior
       
-      ## Add positive behavior data --------------------------------
+      ### Add positive behavior data --------------------------------
       positive_behavior <- lapply(1:5, function(x){
         pos_behavior_name <- paste0("pos_behavior_", x)
         pos_behavior <- input[[pos_behavior_name]]
@@ -344,7 +666,7 @@ shinyApp(
       
       return_list$positive_behavior <- positive_behavior
       
-      ## Add stimulation and exercise data --------------------------------
+      ### Add stimulation and exercise data --------------------------------
       stimulation <- lapply(1:5, function(x){
         stimulation_name <- paste0("stimulation_", x)
         stimulation <- input[[stimulation_name]]
@@ -365,7 +687,7 @@ shinyApp(
       
       return_list$stimulation <- stimulation
       
-      ## Add sleep data --------------------------------
+      ### Add sleep data --------------------------------
       sleep <- lapply(1:5, function(x){
         sleep_time <- paste0("sleep_time_", x)
         sleep <- input[[sleep_time]]
@@ -384,7 +706,7 @@ shinyApp(
       
       return_list$sleep <- sleep
       
-      ## Add Crate data --------------------------------
+      ### Add Crate data --------------------------------
       crate_time <- input[["crate_time"]]
       if(crate_time != ""){
         crate_alone <- input[["crate_alone"]]
@@ -399,7 +721,7 @@ shinyApp(
       
       return_list$crate <- crate
       
-      ## Add anxieties data --------------------------------
+      ### Add anxieties data --------------------------------
       anxieties <- lapply(1:5, function(x){
         anxieties_input <- paste0("anxieties_", x)
         anxieties <- input[[anxieties_input]]
@@ -416,7 +738,7 @@ shinyApp(
       
       return_list$anxieties <- anxieties
       
-      ## Add things that woked data --------------------------------
+      ### Add things that woked data --------------------------------
       worked_notes <- input[["worked_notes"]]
       if(worked_notes != ""){
         worked <- data.frame("Name" = name, "Date" = date,
@@ -432,421 +754,6 @@ shinyApp(
     })
     
 
-    
-    save_data <- function(data, excel_wb, save_name){
-      # When you add in downloading, add in a second Rbind
-      existing_excel_file <- drive_download(drive_file,
-                                            path = file.path(save_dir,
-                                                             "riley_data.xlsx"),
-                                            overwrite = TRUE)
-      
-      ## Reactivity addition --------------------------------------
-      existing_reactivity <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Negative_reaction_history")
-      
-
-      
-      existing_reactivity$Date <- openxlsx::convertToDate(existing_reactivity$Date)
-      
-      existing_tracker <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Reactivity_tracker")
-      
-      if(is.null(data$reactivity)){
-        total_reactivity <- existing_reactivity
-        total_tracker <- existing_tracker
-      } else {
-        total_reactivity <- rbind(existing_reactivity, data$reactivity)
-        
-        days_since_reactive <- c("NA", diff(total_reactivity$Date))
-        total_reactivity$Days_since_last_event <- days_since_reactive
-        
-      }
-      
-      total_tracker <- lapply(reactivity_ratings, function(x){
-        subset_reactivity <- total_reactivity %>%
-          filter(Score == x)
-        
-        if(nrow(subset_reactivity) > 0){
-          last_reaction <- subset_reactivity[nrow(subset_reactivity),]$Date
-          
-          time_since_reaction <- as.numeric(as.Date(data$date) - 
-                                              as.Date(last_reaction))
-          
-          
-        } else {
-          time_since_reaction <- "NA"
-        }
-        
-        return_data <- data.frame("Reaction" = x,
-                                  "Days_since_reaction" = time_since_reaction)
-        
-        return(data.frame("Reaction" = x,
-                          "Days_since_reaction" = time_since_reaction))
-        
-      })
-      
-      total_tracker <- do.call(rbind, total_tracker)
-      
-      ## Positive reactivity ----------------------------------------
-      existing_pos_reactivity <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Positive_reaction_history")
-      
-      
-      
-      existing_pos_reactivity$Date <- 
-        openxlsx::convertToDate(existing_pos_reactivity$Date)
-      
-  
-      if(is.null(data$pos_reactivity)){
-        total_pos_reactivity <- existing_pos_reactivity
-      } else {
-        total_pos_reactivity <- rbind(existing_pos_reactivity,
-                                      data$pos_reactivity)
-      }
-
-      ## Negative behavior ----------------------------------------
-      existing_neg_behavior <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Negative_home_behaviors")
-      
-      
-      
-      existing_neg_behavior$Date <- 
-        openxlsx::convertToDate(existing_neg_behavior$Date)
-      
-      
-      if(is.null(data$negative_behavior)){
-        total_negative_behavior <- existing_neg_behavior
-      } else {
-        total_negative_behavior <- rbind(existing_neg_behavior,
-                                      data$negative_behavior)
-      }
-      
-      ## Positive behavior ----------------------------------------
-      existing_pos_behavior <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Positive_home_behaviors")
-      
-      
-      
-      existing_pos_behavior$Date <- 
-        openxlsx::convertToDate(existing_pos_behavior$Date)
-      
-      
-      if(is.null(data$positive_behavior)){
-        total_positive_behavior <- existing_pos_behavior
-      } else {
-        total_positive_behavior <- rbind(existing_pos_behavior,
-                                         data$positive_behavior)
-      }
-      
-      ## Stimulation/exercise ----------------------------------------
-      existing_stimulation <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Stimulation_exercise")
-      
-      
-      
-      existing_stimulation$Date <- 
-        openxlsx::convertToDate(existing_stimulation$Date)
-      
-
-      if(is.null(data$stimulation)){
-        total_stimulation <- existing_stimulation
-      } else {
-        total_stimulation <- rbind(existing_stimulation,
-                                         data$stimulation)
-      }
-      
-      ## Sleep ----------------------------------------
-      existing_sleep <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Sleep")
-      
-      
-      
-      existing_sleep$Date <- 
-        openxlsx::convertToDate(existing_sleep$Date)
-      
-      
-      if(is.null(data$sleep)){
-        total_sleep <- existing_sleep
-      } else {
-        total_sleep <- rbind(existing_sleep,
-                                   data$sleep)
-      }
-      
-      ## Crate ----------------------------------------
-      existing_crate <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Crate")
-      
-      
-      
-      existing_crate$Date <- 
-        openxlsx::convertToDate(existing_crate$Date)
-      
-      
-      if(is.null(data$crate)){
-        total_crate <- existing_crate
-      } else {
-        total_crate <- rbind(existing_crate,
-                             data$crate)
-      }
-      
-
-      ## Anxieties ----------------------------------------
-      existing_anxieities <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Anxieties")
-      
-      
-      
-      existing_anxieities$Date <- 
-        openxlsx::convertToDate(existing_anxieities$Date)
-      
-      
-      if(is.null(data$anxieties)){
-        total_anxieites <- existing_anxieities
-      } else {
-        total_anxieites <- rbind(existing_anxieities,
-                             data$anxieties)
-      }
-      
-      
-      ## Things that worked ----------------------------------------
-      exisiting_worked <- 
-        openxlsx::readWorkbook(xlsxFile = file.path(save_dir,
-                                                    "riley_data.xlsx"),
-                               sheet = "Things_worked")
-      
-      
-      
-      exisiting_worked$Date <- 
-        openxlsx::convertToDate(exisiting_worked$Date)
-      
-      
-      if(is.null(data$worked)){
-        total_worked <- exisiting_worked
-      } else {
-        total_worked <- rbind(exisiting_worked,
-                                 data$worked)
-      }
-
-      ## Add to wb --------------------------------------------------
-      
-      # Save reaction history
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Negative_reaction_history")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Negative_reaction_history", 
-                          x = total_reactivity)
-      
-      openxlsx::addStyle(wb = excel_wb,
-                         sheet = "Negative_reaction_history",
-                         style = merge_style,
-                         cols = 6,
-                         rows = 1:nrow(total_reactivity) + 1)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Negative_reaction_history",
-                             cols = c(1, 2, 3, 4, 5, 6),
-                             widths = c(12, 12, 16, 30, 16, 60))
-      
-      # Add color scale
-      invisible(lapply(names(all_styles), function(reactivity_type){
-        openxlsx::conditionalFormatting(wb = excel_wb,
-                                        sheet = "Negative_reaction_history",
-                                        cols = 4,
-                                        rows = 1:nrow(total_reactivity) + 1,
-                                        rule = reactivity_type,
-                                        type = "contains",
-                                        style = all_styles[[reactivity_type]])
-      }))
-
-      
-      # Save tracker
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Reactivity_tracker")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Reactivity_tracker", 
-                          x = total_tracker)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Reactivity_tracker",
-                             cols = c(1, 2),
-                             widths = c(30, 12))
-      
-      # Save positive reaction history
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Positive_reaction_history")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Positive_reaction_history", 
-                          x = total_pos_reactivity)
-      
-      openxlsx::addStyle(wb = excel_wb,
-                         sheet = "Positive_reaction_history",
-                         style = merge_style,
-                         cols = 5,
-                         rows = 1:nrow(total_pos_reactivity) + 1)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Positive_reaction_history",
-                             cols = c(1, 2, 3, 4, 5),
-                             widths = c(12, 12, 16, 16, 60))
-      
-      # Save negative behaviors
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Negative_home_behaviors")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Negative_home_behaviors", 
-                          x = total_negative_behavior)
-      
-      openxlsx::addStyle(wb = excel_wb,
-                         sheet = "Negative_home_behaviors",
-                         style = merge_style,
-                         cols = 4,
-                         rows = 1:nrow(total_negative_behavior) + 1)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Negative_home_behaviors",
-                             cols = c(1, 2, 3, 4),
-                             widths = c(12, 12, 20, 60))
-      
-      # Save positive behaviors
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Positive_home_behaviors")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Positive_home_behaviors", 
-                          x = total_positive_behavior)
-      
-      openxlsx::addStyle(wb = excel_wb,
-                         sheet = "Positive_home_behaviors",
-                         style = merge_style,
-                         cols = 4,
-                         rows = 1:nrow(total_positive_behavior) + 1)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Positive_home_behaviors",
-                             cols = c(1, 2, 3, 4),
-                             widths = c(12, 12, 25, 60))
-      
-      # Save Stimulation
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Stimulation_exercise")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Stimulation_exercise", 
-                          x = total_stimulation)
-      
-      openxlsx::addStyle(wb = excel_wb,
-                         sheet = "Stimulation_exercise",
-                         style = merge_style,
-                         cols = 5,
-                         rows = 1:nrow(total_stimulation) + 1)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Stimulation_exercise",
-                             cols = c(1, 2, 3, 4, 5),
-                             widths = c(12, 12, 25, 16, 60))
-      
-      # Save Sleep
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Sleep")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Sleep", 
-                          x = total_sleep)
-      
-      openxlsx::addStyle(wb = excel_wb,
-                         sheet = "Sleep",
-                         style = merge_style,
-                         cols = 5,
-                         rows = 1:nrow(total_sleep) + 1)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Sleep",
-                             cols = c(1, 2, 3, 4, 5),
-                             widths = c(12, 12, 16, 16, 60))
-      
-      # Save Crate
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Crate")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Crate", 
-                          x = total_crate)
-      
-      openxlsx::addStyle(wb = excel_wb,
-                         sheet = "Crate",
-                         style = merge_style,
-                         cols = 5,
-                         rows = 1:nrow(total_crate) + 1)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Crate",
-                             cols = c(1, 2, 3, 4, 5),
-                             widths = c(12, 12, 16, 16, 60))
-      
-      # Save Anxieties
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Anxieties")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Anxieties", 
-                          x = total_anxieites)
-      
-      openxlsx::addStyle(wb = excel_wb,
-                         sheet = "Anxieties",
-                         style = merge_style,
-                         cols = 4,
-                         rows = 1:nrow(total_anxieites) + 1)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Anxieties",
-                             cols = c(1, 2, 3, 4),
-                             widths = c(12, 12, 16, 60))
-      
-      # Save things that worked
-      openxlsx::addWorksheet(wb = excel_wb,
-                             sheet = "Things_worked")
-      openxlsx::writeData(wb = excel_wb,
-                          sheet = "Things_worked", 
-                          x = total_worked)
-      
-      openxlsx::addStyle(wb = excel_wb,
-                         sheet = "Things_worked",
-                         style = merge_style,
-                         cols = 3,
-                         rows = 1:nrow(total_worked) + 1)
-      
-      openxlsx::setColWidths(wb = excel_wb,
-                             sheet = "Things_worked",
-                             cols = c(1, 2, 3),
-                             widths = c(12, 12, 60))
-      
-      # Save workbook
-      openxlsx::saveWorkbook(wb = excel_wb, file = save_name,
-                             overwrite = TRUE)
-      
-      
-      # Move file to drive
-      # drive_upload(save_name, drive_file, type = "spreadsheet",
-      #              overwrite = TRUE)
-      drive_update(file = drive_file, media = save_name)
-      
-    }
-
-    
-
     # Close the form once submitted
     observeEvent(input$submit, {
       
@@ -856,7 +763,6 @@ shinyApp(
       save_data(data = formData(),
                 excel_wb = riley_reactivity_wb,
                 save_name = file.path(save_dir, "riley_reaction_history.xlsx"))
-      #saveData(formData())
       shinyjs::reset("form")
       shinyjs::hide("form")
       shinyjs::show("thankyou_msg")
